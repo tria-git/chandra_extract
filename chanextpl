@@ -1,0 +1,109 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use diagnostics;
+use Cwd;
+
+my  $ciaoscript = "specextract";
+
+my $sourceid = "cena";
+my $datadir = "/userdata/data/graefe/chandra2";
+my $ii;
+my $jj;
+my $bkgciaoreg;
+my $extractdir;
+my $regiondir;
+my $workingdir;
+
+my @obsids;
+my @evtfiles;
+my @mskfiles;
+my @pbkfiles;
+my @asolfiles;
+my @bpxfiles;
+my @bkgregfiles;
+
+my $test;
+
+@obsids=(
+'10722',
+    );
+
+my @regions=(
+"plasma",
+);
+
+#get files from reprocessed Chandra data
+print "get reprocessed files...\n";
+for($ii=0; $ii<@obsids ; $ii++){
+no warnings 'uninitialized';
+    @evtfiles[$ii] = glob("$datadir/$sourceid/$obsids[$ii]/repro/acisf*evt2.fits");
+    @mskfiles[$ii] = glob("$datadir/$sourceid/$obsids[$ii]/repro/acisf*msk1.fits");
+    @pbkfiles[$ii] = glob("$datadir/$sourceid/$obsids[$ii]/repro/acisf*pbk0.fits");
+    @asolfiles[$ii] = glob("$datadir/$sourceid/$obsids[$ii]/repro/pcad*asol1.fits");
+    @bpxfiles[$ii] = glob("$datadir/$sourceid/$obsids[$ii]/repro/acisf*_0*bpix1.fits");
+}
+print "done\n";
+
+#get all background region files
+print "get background files...\n";
+for($ii=0; $ii<@obsids ; $ii++){
+#    @bkgregfiles[$ii] = "$datadir/$sourceid/orig/10542/bkg_fk5.reg"; # one bkg file only!
+#    @bkgregfiles[$ii] = "$datadir/$sourceid/$obsids[$ii]/bkg_fk5.reg";
+#     @bkgregfiles[$ii] = "$datadir/$sourceid/$obsids[$ii]/bkg_ciao.reg";
+    @bkgregfiles[$ii] = "$datadir/$sourceid/$obsids[$ii]/bkg2_ciao.reg";
+}
+print "done\n";
+
+#create  all region directories
+print "get region files...\n";
+for($ii=0; $ii<@obsids ; $ii++){
+    print "obsid $obsids[$ii]\n";
+    for($jj=0; $jj<@regions ; $jj++){
+	$regiondir = "$datadir/$sourceid/$obsids[$ii]/$regions[$jj]";
+	if (-e $regiondir){
+	    print "directory $regiondir already existing\n";
+	}
+	else{
+	    mkdir $regiondir,0755;
+	}
+    }
+}
+print "done\n";
+
+#go to all region folders for each obsid and extract the spectra
+for($ii=0; $ii<@obsids ; $ii++){
+    for($jj=0; $jj<@regions ; $jj++){
+	my $regpath = "$datadir/$sourceid/$obsids[$ii]/regions/$regions[$jj]"; # use for standard fk5 region files
+#	my $regpath = "$datadir/$sourceid/$obsids[$ii]/$regions[$jj]"; # use for physical region files
+	$regiondir = "$datadir/$sourceid/$obsids[$ii]/$regions[$jj]";
+	chdir($regiondir);
+	$workingdir = cwd();
+	print "now working in $workingdir...\n";
+ 
+	system($ciaoscript,
+	      # "infile=${evtfiles[$ii]}[sky=region(${regiondir}_fk5.reg)]",
+	      # "infile=${evtfiles[$ii]}[sky=region(${regpath}_fk5.reg)]", # use for fk5 named region files
+	       "infile=${evtfiles[$ii]}[sky=region(${regpath}_ciao.reg)]", # use for differently named region files
+	       "outroot=${regions[$jj]}",
+	       "bkgfile=${evtfiles[$ii]}[sky=region(@{bkgregfiles[$ii]})]",
+	       "asp=${asolfiles[$ii]}",
+	       "badpixfile=${bpxfiles[$ii]}",
+	       "mskfile=${mskfiles[$ii]}",
+	       "bkgresp=yes",
+	       "weight=yes",
+	      # "weight=no",
+	      # "weight_rmf=no",
+	       "weight_rmf=yes",
+	       "correctpsf=no",
+	      # "correctpsf=yes",
+	       "combine=no",
+	       "grouptype=NONE",
+	       "binspec=NONE",
+	       "bkg_grouptype=NONE",
+	       "bkg_binspec=NONE",
+	       "verbose=1"
+	    );
+    }
+}
