@@ -11,7 +11,7 @@ my $ciaodownload = "download_chandra_obsid";
 my $ciaorepro = "chandra_repro";
 
 my $sourceid ="m82";
-my $datadir = "/userdata/data/graefe/chandra2";
+my $datadir = "/userdata/data/chandra2";
 
 my $workingdir;
 my $ii;
