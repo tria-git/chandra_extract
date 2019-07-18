@@ -8,7 +8,7 @@ use Cwd;
 my  $ciaoscript = "specextract";
 
 my $sourceid = "cena";
-my $datadir = "/userdata/data/graefe/chandra2";
+my $datadir = "/userdata/data/chandra2";
 my $ii;
 my $jj;
 my $bkgciaoreg;
